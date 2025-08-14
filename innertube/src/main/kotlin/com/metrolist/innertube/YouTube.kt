@@ -124,6 +124,19 @@ object YouTube {
 
     suspend fun searchSummary(query: String): Result<SearchSummaryPage> = runCatching {
         val response = innerTube.search(WEB_REMIX, query).body<SearchResponse>()
+
+        // Logging for #1264
+        val contents = response.contents?.tabbedSearchResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents
+        if (contents != null) {
+            contents.forEachIndexed { index, item ->
+                val itemJson = Json { prettyPrint = true }.encodeToString(item)
+                Logger.getLogger("YouTube - Search error").info("Content item [$index]: ${itemJson}")
+            }
+        } else {
+            Logger.getLogger("YouTube - Search error").info("No content items found.")
+        }
+        //
+
         SearchSummaryPage(
             summaries = response.contents?.tabbedSearchResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents?.mapNotNull { it ->
                 if (it.musicCardShelfRenderer != null)
